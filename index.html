@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .description {
+            color: #555;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        
+        .loader-container {
+            width: 100%;
+            background: #f1f1f1;
+            height: 30px;
+            border-radius: 15px;
+            margin: 25px 0;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .loader-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 15px;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        
+        .loader-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background-image: linear-gradient(
+                -45deg, 
+                rgba(255, 255, 255, 0.2) 25%, 
+                transparent 25%, 
+                transparent 50%, 
+                rgba(255, 255, 255, 0.2) 50%, 
+                rgba(255, 255, 255, 0.2) 75%, 
+                transparent 75%, 
+                transparent
+            );
+            z-index: 1;
+            background-size: 30px 30px;
+            animation: move 1s linear infinite;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .percentage {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .loading-text {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 30px;
+        }
+        
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        @keyframes move {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 30px 30px;
+            }
+        }
+        
+        .details {
+            margin-top: 25px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            text-align: left;
+        }
+        
+        .details h3 {
+            color: #444;
+            margin-bottom: 10px;
+        }
+        
+        .details p {
+            color: #666;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Loading Progress Animation</h1>
+        <p class="description">This animation demonstrates how a loading bar progresses from 0% to 100% with a modern design.</p>
+        
+        <div class="percentage">0%</div>
+        <div class="loading-text">Loading initial resources...</div>
+        
+        <div class="loader-container">
+            <div class="loader-bar"></div>
+        </div>
+        
+        <div class="progress-stats">
+            <span>0 KB</span>
+            <span>100 KB</span>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn">Start Loading</button>
+            <button id="resetBtn" disabled>Reset</button>
+        </div>
+        
+        <div class="details">
+            <h3>How Load Animations Work</h3>
+            <p>Load animations simulate progress by gradually increasing a visual indicator (like a bar or percentage) from 0% to 100%. They provide user feedback during operations where the actual progress can't be precisely measured. The animation uses JavaScript to update the width of the progress bar and the percentage text at regular intervals.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loaderBar = document.querySelector('.loader-bar');
+            const percentageText = document.querySelector('.percentage');
+            const loadingText = document.querySelector('.loading-text');
+            const startBtn = document.getElementById('startBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            
+            let progress = 0;
+            let loadingInterval;
+            
+            // Messages to display at different progress points
+            const loadingMessages = [
+                { progress: 0, message: "Loading initial resources..." },
+                { progress: 20, message: "Processing data..." },
+                { progress: 40, message: "Rendering components..." },
+                { progress: 60, message: "Finalizing content..." },
+                { progress: 80, message: "Almost complete..." },
+                { progress: 95, message: "Finishing up..." }
+            ];
+            
+            function startLoading() {
+                startBtn.disabled = true;
+                resetBtn.disabled = false;
+                progress = 0;
+                
+                loadingInterval = setInterval(() => {
+                    // Increment progress with some randomness to simulate real loading
+                    progress += Math.random() * 4;
+                    
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(loadingInterval);
+                        loadingText.textContent = "Complete!";
+                    }
+                    
+                    // Update the progress bar width
+                    loaderBar.style.width = progress + '%';
+                    
+                    // Update the percentage text
+                    percentageText.textContent = Math.round(progress) + '%';
+                    
+                    // Update loading text based on progress
+                    const currentMessage = loadingMessages.reduce((prev, curr) => {
+                        return (curr.progress <= progress) ? curr : prev;
+                    }, loadingMessages[0]);
+                    
+                    loadingText.textContent = currentMessage.message;
+                    
+                }, 100);
+            }
+            
+            function resetLoading() {
+                clearInterval(loadingInterval);
+                progress = 0;
+                loaderBar.style.width = '0%';
+                percentageText.textContent = '0%';
+                loadingText.textContent = 'Loading initial resources...';
+                startBtn.disabled = false;
+                resetBtn.disabled = true;
+            }
+            
+            startBtn.addEventListener('click', startLoading);
+            resetBtn.addEventListener('click', resetLoading);
+        });
+    </script>
+</body>
+</html>
