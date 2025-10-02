@@ -1,8 +1,14 @@
+Dim allContainers as Array[Container]
+Dim vr_containers as Array[Container]
+Dim entries as Array[String]
 
 Sub OnInit()
 	Scene.Map.RegisterChangedCallback("tcp_status")
-	Dim allContainers as Array[Container] = FindAllSceneContainers()
+	allContainers = FindAllSceneContainers()
 	printContainerNames(allContainers)
+	
+	vr_containers = FindAllContainersWithTextures(allContainers)
+	
 	if allContainers.ubound == -1 Then Exit Sub
 	dim containersString as String = allContainers[0].Name
 	For i = 1 To allContainers.ubound
@@ -13,16 +19,43 @@ Sub OnInit()
 	Dim tcpString as String = prepareJsonString("container_names", containersString)
 	SendDataTCP(tcpString)
 	
+
+	Println("VR Containers")
+	for i=0 to vr_containers.ubound
+		entries.push(vr_containers[i].Name)
+		println(vr_containers[i])
+	Next
+	
+	UpdateGuiParameterEntries("vr_containers", entries)
+	SendGuiRefresh()
+	
 End Sub
+
+Function FindAllContainersWithTextures(allConts as Array[Container]) as Array[Container]
+	Dim result as Array[Container]
+	Dim current as Container
+	Println("\n\nPrinting Contianers with Textures\n\n\n")
+	for i=0 to allConts.ubound
+		current = allConts[i]
+		if current <> NULL and current.Texture <> Null and current.Active Then
+			Println(current.Name)
+			result.push(current)
+		End If
+	Next
+	FindAllContainersWithTextures = result 
+End Function
 
 
 Sub SendDataTCP(data as String)
 	Dim ip as String
 	Dim port as Integer = 999
+	Dim camera_n as Integer = 1
 	
 	ip = GetParameterString("remote_ip")
 	port = GetParameterInt("port")
-	data = data&":"&Scene.Name
+	camera_n = GetParameterInt("camera_number")
+	
+	data = data&":"&Scene.Name&":camera_"&CStr(camera_n)
 	System.TcpSendAsync("tcp_status",ip, port, data, 10)
 	
 End Sub
@@ -32,7 +65,7 @@ Function prepareJsonString(func as String, data as String) as String
 End Function
 
 Sub SendVisibleContainers()
-	Dim visConts as Array[String] = testPerObjectVisibility(FindAllSceneContainers())
+	Dim visConts as Array[String] = testPerObjectVisibility(vr_containers)
 	Dim tcpString, containersString as String 
 	
 	
@@ -50,22 +83,57 @@ End Sub
 
 
 sub OnExecPerField()
+' Check if there are any additional Containers we need to add
+	AdditionalContainers()
 	SendVisibleContainers()
 end sub
 
-Function MatchContainerByName(conts as Array[Container]) as Container
+Function MatchContainerByName(contName as String, conts as Array[Container]) as Container
 		Dim i as Integer = 0
 	
 		for i = 0 To conts.ubound
-		
 			Dim currCont as Container = conts[i]
-			
-			if currCont <> NULL and currCont.Name.Match("img_centre") Then
+			if currCont <> NULL and currCont.Name.Match(contName) Then
 				MatchContainerByName = currCont
 				Exit Function
 			End If
 		Next
 End Function
+
+
+Function ContainerTracked(cont as Container, allConts as Array[Container]) as Boolean
+	for i=0 to allConts.ubound
+		if cont == allConts[i] Then 
+			ContainerTracked = True
+			Exit Function
+		End If	
+	Next
+	ContainerTracked = False
+End Function
+
+
+Sub AdditionalContainers()
+	Dim contNames as String = GetParameterString("addition_containers")	
+	Dim contNamesSplit as Array[String]
+	Dim current as String
+	
+	contNames.Split(",", contNamesSplit)
+	
+	If  contNamesSplit.ubound == -1 Then
+		Exit Sub
+	End If
+	Dim cont as Container
+	for i=0 to contNamesSplit.ubound
+		current = contNamesSplit[i]
+		cont  = MatchContainerByName(current, allContainers)
+		if ContainerTracked(cont, vr_containers) <> True and cont <> Null Then
+			Println	("Added Container")			
+			vr_containers.push(cont)
+			Println(cont.Name)
+		End If
+	Next
+
+End Sub
 
 Function testPerObjectVisibility(conts as Array[Container]) as Array[String]
 	Dim i as Integer = 0
@@ -188,8 +256,14 @@ End Function
 
 sub OnInitParameters()
 	RegisterParameterString("remote_ip", "IP Address", "127.0.0.1", 16 , 16 , "")
-	RegisterParameterInt("port", "Port", 999, 600, 60000)
+	RegisterParameterInt("port", "Port", 999, 600, 60000)	
 	RegisterParameterSliderDouble("visiblity_limit","Visible Containers Limit", 0.3, 0.0, 1.0, 100)
+	RegisterParameterInt("camera_number", "Camera", 1, 1, 20)
+	Dim arr as Array[String] 
+	arr.push("Hello")
+	arr.push("World")
+	RegisterParameterList("vr_containers", "Tracked Containers", 0, arr, 100, 200)
+	RegisterParameterString("addition_containers", "Additional Containers", "", 100, 1024, "")
 end sub
 
 sub OnSharedMemoryVariableChanged(map As SharedMemory, mapKey As String)
