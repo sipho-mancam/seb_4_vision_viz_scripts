@@ -31,38 +31,30 @@ Sub OnInit()
 	
 End Sub
 
-Function FindAllContainersWithTextures(allConts as Array[Container]) as Array[Container]
-	Dim result as Array[Container]
-	Dim current as Container
-	Println("\n\nPrinting Contianers with Textures\n\n\n")
-	for i=0 to allConts.ubound
-		current = allConts[i]
-		if current <> NULL and current.Texture <> Null and current.Active Then
-			Println(current.Name)
-			result.push(current)
-		End If
-	Next
-	FindAllContainersWithTextures = result 
-End Function
+sub OnInitParameters()
+	RegisterParameterString("remote_ip", "IP Address", "127.0.0.1", 16 , 16 , "")
+	RegisterParameterInt("port", "Port", 999, 600, 60000)	
+	RegisterParameterSliderDouble("visiblity_limit","Visible Containers Limit", 0.3, 0.0, 1.0, 100)
+	RegisterParameterInt("camera_number", "Camera", 1, 1, 20)
+	Dim arr as Array[String] 
+	arr.push("Hello")
+	arr.push("World")
+	RegisterParameterList("vr_containers", "Tracked Containers", 0, arr, 100, 200)
+	RegisterParameterString("addition_containers", "Additional Containers", "", 100, 1024, "")
+end sub
 
+sub OnSharedMemoryVariableChanged(map As SharedMemory, mapKey As String)
+	if mapKey.Match("TcpSendAsync") Then
+		println("TCP status received")
+	End if
+end sub
 
-Sub SendDataTCP(data as String)
-	Dim ip as String
-	Dim port as Integer = 999
-	Dim camera_n as Integer = 1
-	
-	ip = GetParameterString("remote_ip")
-	port = GetParameterInt("port")
-	camera_n = GetParameterInt("camera_number")
-	
-	data = data&":"&Scene.Name&":camera_"&CStr(camera_n)
-	System.TcpSendAsync("tcp_status",ip, port, data, 10)
-	
-End Sub
+sub OnExecPerField()
+' Check if there are any additional Containers we need to add
+	AdditionalContainers()
+	SendVisibleContainers()
+end sub
 
-Function prepareJsonString(func as String, data as String) as String
-	prepareJsonString = func&":"&data
-End Function
 
 Sub SendVisibleContainers()
 	Dim visConts as Array[String] = testPerObjectVisibility(vr_containers)
@@ -81,12 +73,39 @@ Sub SendVisibleContainers()
 
 End Sub
 
+Sub SendDataTCP(data as String)
+	Dim ip as String
+	Dim port as Integer = 999
+	Dim camera_n as Integer = 1
+	
+	ip = GetParameterString("remote_ip")
+	port = GetParameterInt("port")
+	camera_n = GetParameterInt("camera_number")
+	
+	data = data&":"&Scene.Name&":camera:"&CStr(camera_n)
+	System.TcpSendAsync("tcp_status",ip, port, data, 10)
+End Sub
 
-sub OnExecPerField()
-' Check if there are any additional Containers we need to add
-	AdditionalContainers()
-	SendVisibleContainers()
-end sub
+Function FindAllContainersWithTextures(allConts as Array[Container]) as Array[Container]
+	Dim result as Array[Container]
+	Dim current as Container
+	Println("\n\nPrinting Contianers with Textures\n\n\n")
+	for i=0 to allConts.ubound
+		current = allConts[i]
+		if current <> NULL and current.Texture <> Null and current.Active Then
+			Println(current.Name)
+			result.push(current)
+		End If
+	Next
+	FindAllContainersWithTextures = result 
+End Function
+
+
+Function prepareJsonString(func as String, data as String) as String
+	prepareJsonString = func&":"&data
+End Function
+
+
 
 Function MatchContainerByName(contName as String, conts as Array[Container]) as Container
 		Dim i as Integer = 0
@@ -127,9 +146,7 @@ Sub AdditionalContainers()
 		current = contNamesSplit[i]
 		cont  = MatchContainerByName(current, allContainers)
 		if ContainerTracked(cont, vr_containers) <> True and cont <> Null Then
-			Println	("Added Container")			
 			vr_containers.push(cont)
-			Println(cont.Name)
 		End If
 	Next
 
@@ -252,22 +269,3 @@ Function isContainerOnScreen(cont as Container) as Double
 	visibleArea = (vTr.x - vBl.x) * (vTr.y - vBl.y)
 	isContainerOnScreen = visibleArea/totalArea
 End Function
-
-
-sub OnInitParameters()
-	RegisterParameterString("remote_ip", "IP Address", "127.0.0.1", 16 , 16 , "")
-	RegisterParameterInt("port", "Port", 999, 600, 60000)	
-	RegisterParameterSliderDouble("visiblity_limit","Visible Containers Limit", 0.3, 0.0, 1.0, 100)
-	RegisterParameterInt("camera_number", "Camera", 1, 1, 20)
-	Dim arr as Array[String] 
-	arr.push("Hello")
-	arr.push("World")
-	RegisterParameterList("vr_containers", "Tracked Containers", 0, arr, 100, 200)
-	RegisterParameterString("addition_containers", "Additional Containers", "", 100, 1024, "")
-end sub
-
-sub OnSharedMemoryVariableChanged(map As SharedMemory, mapKey As String)
-	if mapKey.Match("TcpSendAsync") Then
-		println("TCP status received")
-	End if
-end sub
