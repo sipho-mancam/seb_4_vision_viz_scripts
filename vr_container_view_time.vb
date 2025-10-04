@@ -1,19 +1,25 @@
 Dim allContainers as Array[Container]
 Dim vr_containers as Array[Container]
 Dim entries as Array[String]
+Dim pauseState as Boolean
 
 Sub OnInit()
+	RegisterPluginVersion(0, 1, 0)
+	RegisterInfoText("This plugin enables tracking of on screen time for graphics in the scene")
+
 	Scene.Map.RegisterChangedCallback("tcp_status")
 	allContainers = FindAllSceneContainers()
 	printContainerNames(allContainers)
+	pauseState = False
+	
 	
 	vr_containers = FindAllContainersWithTextures(allContainers)
 	
 	if allContainers.ubound == -1 Then Exit Sub
 	dim containersString as String = allContainers[0].Name
-	For i = 1 To allContainers.ubound
-		if allContainers[i] <> NULL Then
-			containersString = containersString &","&allContainers[i].Name
+	For i = 1 To vr_containers.ubound
+		if vr_containers[i] <> NULL Then
+			containersString = containersString &","&vr_containers[i].Name
 		End if	
 	Next
 	Dim tcpString as String = prepareJsonString("container_names", containersString)
@@ -36,12 +42,14 @@ sub OnInitParameters()
 	RegisterParameterInt("port", "Port", 999, 600, 60000)	
 	RegisterParameterSliderDouble("visiblity_limit","Visible Containers Limit", 0.3, 0.0, 1.0, 100)
 	RegisterParameterInt("camera_number", "Camera", 1, 1, 20)
+	RegisterPushButton("pause_btn", "Pause Tracking", 2)
+	RegisterParameterLabel("pause_state_label", "Tracking", 100, 10)
 	Dim arr as Array[String] 
 	arr.push("Hello")
 	arr.push("World")
 	RegisterParameterList("vr_containers", "Tracked Containers", 0, arr, 100, 200)
 	RegisterParameterString("addition_containers", "Additional Containers", "", 100, 1024, "")
-end sub
+End Sub
 
 sub OnSharedMemoryVariableChanged(map As SharedMemory, mapKey As String)
 	if mapKey.Match("TcpSendAsync") Then
@@ -51,8 +59,23 @@ end sub
 
 sub OnExecPerField()
 ' Check if there are any additional Containers we need to add
-	AdditionalContainers()
-	SendVisibleContainers()
+	If Not pauseState Then	
+		AdditionalContainers()
+		SendVisibleContainers()
+	End If
+end sub
+
+sub OnExecAction(buttonId As Integer)
+	If buttonId == 2 Then
+		If pauseState Then
+			pauseState = False
+			SendGuiParameterShow("pause_state_label", SHOW)
+		Else
+			Println("Tracking Paused")
+			PauseState = True
+			SendGuiParameterShow("pause_state_label", HIDE)
+		End If 
+	End If
 end sub
 
 
@@ -105,11 +128,8 @@ Function prepareJsonString(func as String, data as String) as String
 	prepareJsonString = func&":"&data
 End Function
 
-
-
 Function MatchContainerByName(contName as String, conts as Array[Container]) as Container
 		Dim i as Integer = 0
-	
 		for i = 0 To conts.ubound
 			Dim currCont as Container = conts[i]
 			if currCont <> NULL and currCont.Name.Match(contName) Then
@@ -269,3 +289,4 @@ Function isContainerOnScreen(cont as Container) as Double
 	visibleArea = (vTr.x - vBl.x) * (vTr.y - vBl.y)
 	isContainerOnScreen = visibleArea/totalArea
 End Function
+
