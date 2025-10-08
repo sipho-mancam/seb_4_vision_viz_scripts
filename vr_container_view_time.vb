@@ -10,7 +10,7 @@ Sub OnInit()
 	Scene.Map.RegisterChangedCallback("tcp_status")
 	allContainers = FindAllSceneContainers()
 	printContainerNames(allContainers)
-	pauseState = False
+	pauseState = True
 	
 	
 	vr_containers = FindAllContainersWithTextures(allContainers)
@@ -42,7 +42,7 @@ sub OnInitParameters()
 	RegisterParameterInt("port", "Port", 999, 600, 60000)	
 	RegisterParameterSliderDouble("visiblity_limit","Visible Containers Limit", 0.3, 0.0, 1.0, 100)
 	RegisterParameterInt("camera_number", "Camera", 1, 1, 20)
-	RegisterPushButton("pause_btn", "Pause Tracking", 2)
+	RegisterPushButton("pause_btn", "Start/Stop Tracking", 2)
 	RegisterParameterLabel("pause_state_label", "Tracking", 100, 10)
 	Dim arr as Array[String] 
 	arr.push("Hello")
@@ -289,4 +289,5 @@ Function isContainerOnScreen(cont as Container) as Double
 	visibleArea = (vTr.x - vBl.x) * (vTr.y - vBl.y)
 	isContainerOnScreen = visibleArea/totalArea
 End Function
+
 
