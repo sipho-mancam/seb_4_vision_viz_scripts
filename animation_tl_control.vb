@@ -114,6 +114,3 @@ sub OnSharedMemoryVariableChanged(map As SharedMemory, mapKey As String)
 	
 	end if
 end sub
-
-
-

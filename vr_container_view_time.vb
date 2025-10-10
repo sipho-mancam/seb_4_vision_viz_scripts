@@ -2,6 +2,7 @@ Dim allContainers as Array[Container]
 Dim vr_containers as Array[Container]
 Dim entries as Array[String]
 Dim pauseState as Boolean
+Dim vr_field_containers as Array[Container]
 
 Sub OnInit()
 	RegisterPluginVersion(0, 1, 0)
@@ -12,14 +13,13 @@ Sub OnInit()
 	printContainerNames(allContainers)
 	pauseState = True
 	
-	
 	vr_containers = FindAllContainersWithTextures(allContainers)
 	
 	if allContainers.ubound == -1 Then Exit Sub
 	dim containersString as String = allContainers[0].Name
 	For i = 1 To vr_containers.ubound
 		if vr_containers[i] <> NULL Then
-			containersString = containersString &","&vr_containers[i].Name
+			containersString = containersString&","&vr_containers[i].Name
 		End if	
 	Next
 	Dim tcpString as String = prepareJsonString("container_names", containersString)
@@ -63,6 +63,11 @@ sub OnExecPerField()
 		AdditionalContainers()
 		SendVisibleContainers()
 	End If
+	
+	Dim vr_conts as Array[Container] = FindAllFieldContainers(vr_containers)
+	Dim whz as Vertex = CalculateFieldWH(vr_conts)
+	
+	Println(whz)
 end sub
 
 sub OnExecAction(buttonId As Integer)
@@ -78,6 +83,60 @@ sub OnExecAction(buttonId As Integer)
 	End If
 end sub
 
+
+Function FindAllFieldContainers(vr_containers as Array[Container]) As Array[Container]
+	Dim cont as Container
+	Dim result as Array[Container]
+	for i=0 to vr_containers.ubound
+		cont  = vr_containers[i]
+		
+		If cont <> NULL Then
+			Dim v as Vertex= cont.Position.xyz
+			If v.x <> 0  or v.y <> 0 or v.z <> 0 Then
+				result.push(cont)
+			End If
+		End If
+	Next
+	FindAllFieldContainers = result
+End Function
+
+Function CalculateFieldWH(field_containers as Array[Container]) as Vertex
+	Dim minX, minY, maxX, maxY, x, y as Double
+	Dim cont as Container
+	Dim result as Vertex
+	minX = 100000000000.0
+	minY = 100000000000.0
+	
+	maxX = -100000000000.0
+	maxY = -100000000000.0
+	
+	for i = 0 to field_containers.ubound
+		cont  = field_containers[i]
+		
+		if cont <> NULL Then
+			
+			If min(cont.Position.x, minX) == cont.Position.x Then
+				minX = cont.Position.x
+			ElseIf max(cont.Position.x, maxX) == cont.Position.x Then
+				maxX = cont.Position.x
+			End If
+			
+			If min(cont.Position.y, minY) == cont.Position.y Then
+				minY = cont.Position.y
+			ElseIf max(cont.Position.y, maxY) == cont.Position.y Then
+				maxY = cont.Position.y
+			End If
+		End if
+		
+	Next
+	
+	result.x = maxX - minX
+	result.y = maxY - minY
+	result.z = 0
+	
+	CalculateFieldWH = result
+
+End Function
 
 Sub SendVisibleContainers()
 	Dim visConts as Array[String] = testPerObjectVisibility(vr_containers)
