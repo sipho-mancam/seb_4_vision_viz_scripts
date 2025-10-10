@@ -84,11 +84,11 @@ sub OnExecAction(buttonId As Integer)
 end sub
 
 
-Function FindAllFieldContainers(vr_containers as Array[Container]) As Array[Container]
+Function FindAllFieldContainers(vr_conts as Array[Container]) As Array[Container]
 	Dim cont as Container
 	Dim result as Array[Container]
-	for i=0 to vr_containers.ubound
-		cont  = vr_containers[i]
+	for i=0 to vr_conts.ubound
+		cont  = vr_conts[i]
 		
 		If cont <> NULL Then
 			Dim v as Vertex= cont.Position.xyz
