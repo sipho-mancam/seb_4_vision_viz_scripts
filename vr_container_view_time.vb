@@ -3,6 +3,13 @@ Dim vr_containers as Array[Container]
 Dim entries as Array[String]
 Dim pauseState as Boolean
 Dim vr_field_containers as Array[Container]
+Dim logoTimes as Array[LogoTime]
+
+Structure LogoTime
+	name as String
+	percentageVisibility as Double
+End Structure
+
 
 Sub OnInit()
 	RegisterPluginVersion(0, 1, 0)
@@ -67,7 +74,7 @@ sub OnExecPerField()
 	Dim vr_conts as Array[Container] = FindAllFieldContainers(vr_containers)
 	Dim whz as Vertex = CalculateFieldWH(vr_conts)
 	
-	Println(whz)
+	'Println(whz)
 end sub
 
 sub OnExecAction(buttonId As Integer)
@@ -164,9 +171,18 @@ Sub SendDataTCP(data as String)
 	port = GetParameterInt("port")
 	camera_n = GetParameterInt("camera_number")
 	
-	data = data&":"&Scene.Name&":camera:"&CStr(camera_n)
+	data = data&":"&Scene.Name&":camera:"&CStr(camera_n)&":"&LogoTimeToString()
 	System.TcpSendAsync("tcp_status",ip, port, data, 10)
 End Sub
+
+Function LogoTimeToString() as String
+	Dim result as String = "visibility:"
+
+	For Each t In logoTimes
+		result = result & t.name&";"&t.percentageVisibility&","
+	Next
+	LogoTimeToString = result
+End Function
 
 Function FindAllContainersWithTextures(allConts as Array[Container]) as Array[Container]
 	Dim result as Array[Container]
@@ -238,15 +254,42 @@ Function testPerObjectVisibility(conts as Array[Container]) as Array[String]
 	Dim result as Array[String]
 	Dim visibilityLimit as Double = GetParameterDouble("visiblity_limit")
 	
+	 
 	For i = 0 To conts.ubound
 		if conts[i] <> NULL Then
 			contPerc = isContainerOnScreen(conts[i])
 			if contPerc > visibilityLimit Then
 				result.push(conts[i].Name)
 			End if
+			
+			Dim curLogTime as LogoTime
+			curLogTime.name = conts[i].name
+			curLogTime.percentageVisibility = contPerc
+			Dim index as Integer = isInList(curLogTime)
+			If index <> -1 Then
+				logoTimes[index].percentageVisibility = contPerc
+			Else
+				logoTimes.push(curLogTime)
+			End If
+			
 		End If
 	Next 
 	testPerObjectVisibility = result
+End Function
+
+Function isInList(logo as LogoTime) as Integer
+	Dim cur as LogoTime 
+	
+	For i=0 to logoTimes.ubound
+		cur = logoTimes[i]
+		If logoTimes.ubound <> -1 Then
+			If cur.name == logo.name Then 
+				isInList = i
+				Exit Function
+			End If	
+		End If
+	Next 	
+	isInList = -1
 End Function
 
 Function FindAllSceneContainers() as Array[Container]
