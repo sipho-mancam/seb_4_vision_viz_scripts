@@ -279,7 +279,6 @@ End Function
 
 Function isInList(logo as LogoTime) as Integer
 	Dim cur as LogoTime 
-	
 	For i=0 to logoTimes.ubound
 		cur = logoTimes[i]
 		If logoTimes.ubound <> -1 Then
