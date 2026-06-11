@@ -95,6 +95,10 @@ Sub OnSharedMemoryVariableChanged(map as SharedMemory, mapKey as String)
 		Dim value as String  = map[mapKey]
 		Dim commandStrings as Array[String]
 		value.Split(":", commandStrings)
+		
+		Println("value: "&value)
+		If commandStrings.Size == 1 Then Exit Sub
+		
 		Dim directionCommand as String = commandStrings[1]
 		Dim direction as Integer  = CInt(directionCommand)
 		If direction <> 4 And direction <> 5 Then Exit Sub
